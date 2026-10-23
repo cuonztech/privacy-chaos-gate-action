@@ -1,0 +1,262 @@
+name: "Cuonztech Privacy Chaos Gate"
+description: "Agentic CI/CD Privacy Chaos Engineering & Auto-Remediation Gate for Cookie/Consent Leaks"
+author: "Cuonztech"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  staging-url:
+    description: "The URL of the staging or localhost web environment to stress-test"
+    required: true
+  api-key:
+    description: "API key for the optional LLM patch generation. Only OpenAI is implemented (llm-provider openai); other providers fall back to the built-in rules. Has no effect without llm-remediation: true. Passed via the CPCG_LLM_API_KEY environment variable."
+    required: false
+    default: ""
+  llm-remediation:
+    description: "Opt-in: allow the source code to be sent to the LLM provider (OpenAI only) to generate patches (needs api-key). Off by default; only passed on if the installed CLI supports it."
+    required: false
+    default: "false"
+  llm-provider:
+    description: "LLM provider for auto-remediation. Only 'openai' is implemented; 'anthropic' and 'gemini' fall back to the built-in rules."
+    required: false
+    default: "openai"
+  llm-model:
+    description: "Model to use for auto-remediation"
+    required: false
+    default: "gpt-4o"
+  auto-fix:
+    description: "Generate and apply code patches on the runner when tracker leaks are detected. Off by default: a gate should not silently change files; combine with create-pr to receive the fix as a pull request."
+    required: false
+    default: "false"
+  fail-on-leak:
+    description: "Block the build (exit code 1) if unpatched critical leaks remain"
+    required: false
+    default: "true"
+  fail-on-uncheckable:
+    description: "Block the build (exit code 4) if core scenarios could not be checked conclusively (e.g. consent banner not found). Only passed on if the installed CLI supports it; otherwise a warning is printed."
+    required: false
+    default: "true"
+  strict:
+    description: "Hints (purely functional third parties such as Google Fonts) also block the gate. Off by default: they are reported as hints, not as blockers. Only passed on if the installed CLI supports it."
+    required: false
+    default: "false"
+  ignore:
+    description: "Findings to ignore: tracker name or host pattern, one per line or comma-separated (e.g. fonts.googleapis.com or *.hotjar.com). Ignored findings are listed as ignored in the report."
+    required: false
+    default: ""
+  accept-selector:
+    description: "Own CSS selector of the accept button, one per line (when the built-in CMP detection does not find it)"
+    required: false
+    default: ""
+  reject-selector:
+    description: "Own CSS selector of the reject button, one per line"
+    required: false
+    default: ""
+  settings-selector:
+    description: "Own CSS selector of the settings button, one per line"
+    required: false
+    default: ""
+  banner-frame:
+    description: "Part of the URL of the iframe that contains the consent banner (CMP inside a frame)"
+    required: false
+    default: ""
+  max-subpages:
+    description: "Maximum number of linked subpages checked for trackers (default 12, max 40; larger values take longer)"
+    required: false
+    default: ""
+  banner-wait:
+    description: "Seconds to wait for a late consent banner (1-60; default as in the CLI)"
+    required: false
+    default: ""
+  report-output:
+    description: "File path where the JSON LeakReport will be written"
+    required: false
+    default: "reports/privacy-chaos-report.json"
+  target-source-dir:
+    description: "Root directory of the application source code to inspect and patch"
+    required: false
+    default: "."
+  git-commit:
+    description: "Commit generated privacy fixes into the checked-out branch (requires auto-fix and a valid license; skipped without one)"
+    required: false
+    default: "false"
+  create-pr:
+    description: "Create a fix branch and open a GitHub Pull Request with the generated fix (requires auto-fix, github-token and a valid license; takes precedence over git-commit)"
+    required: false
+    default: "false"
+  github-token:
+    description: "GitHub token for create-pr (contents: write and pull-requests: write). Passed via the GITHUB_TOKEN environment variable, never on the command line."
+    required: false
+    default: ""
+  license:
+    description: "CuonzTech CPCG license (CPCG-… or customer key CPCG-K-…) — from secrets, after online purchase. Not needed for scan and console gate; required for customer report/PDF, git-commit and create-pr. Passed via the CPCG_LICENSE environment variable."
+    required: false
+    default: ""
+  report-pdf:
+    description: "Create the deluxe PDF (cover page + evidence) after the scan. Requires a valid license; skipped without one."
+    required: false
+    default: "false"
+  client-name:
+    description: "Client name for the customer report and the PDF cover page. Requires a valid license."
+    required: false
+    default: ""
+  jurisdiction:
+    description: "Jurisdiction highlighted in the console and report: CH | EU | UK | US-CA | BR | ROW"
+    required: false
+    default: "CH"
+
+outputs:
+  leaks-found:
+    description: "'true' if leaks were detected during chaos tests"
+    value: ${{ steps.cpcg-run.outputs.leaks_found }}
+  leaks-count:
+    description: "Number of tracker leaks detected"
+    value: ${{ steps.cpcg-run.outputs.leaks_count }}
+  patch-applied:
+    description: "'true' if an auto-remediation patch was successfully applied"
+    value: ${{ steps.cpcg-run.outputs.patch_applied }}
+  report-path:
+    description: "Absolute or relative path to the generated JSON report"
+    value: ${{ steps.cpcg-run.outputs.report_path }}
+  gate_state:
+    description: "Gate result as written by the CLI (for example blocked, fix-proposed, inconclusive, passed). Empty if the installed CLI predates this output."
+    value: ${{ steps.cpcg-run.outputs.gate_state }}
+  incomplete:
+    description: "'true' if core scenarios could not be checked conclusively"
+    value: ${{ steps.cpcg-run.outputs.incomplete }}
+  uncheckable_count:
+    description: "Number of scenarios that could not be checked"
+    value: ${{ steps.cpcg-run.outputs.uncheckable_count }}
+  leak_requests:
+    description: "Number of tracker requests observed before consent"
+    value: ${{ steps.cpcg-run.outputs.leak_requests }}
+  exit_code:
+    description: "Exit code of the CLI (0 ok, 1 leaks, 2 license invalid or revoked, 3 error, 4 incomplete)"
+    value: ${{ steps.cpcg-run.outputs.exit_code }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: "20"
+
+    # Installationsschritt: bewusst ohne Secrets (Lizenz, Token, API-Key) in der Umgebung. Nur hier läuft npm.
+    - name: Install Privacy Chaos Gate
+      id: cpcg-install
+      shell: bash
+      env:
+        CPCG_PINNED_VERSION: "0.2.1" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+      run: |
+        set -euo pipefail
+
+        # Veröffentlichtes Paket in der gepinnten Version. Lifecycle-Skripte der Abhängigkeiten laufen nicht
+        # (--ignore-scripts); der Playwright-Browser wird unten ausdrücklich installiert.
+        TOOL_DIR="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/cpcg-XXXXXX")"
+        npm install --prefix "$TOOL_DIR" --ignore-scripts --no-audit --no-fund --loglevel=error "cuonztech-privacy-chaos-gate@${CPCG_PINNED_VERSION}"
+        PW_CLI="$TOOL_DIR/node_modules/playwright/cli.js"
+        if [ -f "$PW_CLI" ]; then
+          node "$PW_CLI" install --with-deps chromium
+        else
+          npx --yes playwright install --with-deps chromium
+        fi
+        echo "cli=$TOOL_DIR/node_modules/cuonztech-privacy-chaos-gate/dist/cli.js" >> "$GITHUB_OUTPUT"
+
+    - name: Run Privacy Chaos Gate
+      id: cpcg-run
+      shell: bash
+      # Alle Inputs gelangen nur über env in das Skript (keine ${{ }}-Interpolation im run-Block:
+      # sonst könnten Input-Werte als Shell-Code ausgeführt werden). Die Lizenz steht nie in der Kommandozeile.
+      env:
+        CPCG_CLI: ${{ steps.cpcg-install.outputs.cli }}
+        CPCG_LLM_API_KEY: ${{ inputs.api-key }}
+        CPCG_LLM_PROVIDER: ${{ inputs.llm-provider }}
+        CPCG_LLM_MODEL: ${{ inputs.llm-model }}
+        CPCG_LICENSE: ${{ inputs.license }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        IN_STAGING_URL: ${{ inputs.staging-url }}
+        IN_LLM_REMEDIATION: ${{ inputs.llm-remediation }}
+        IN_AUTO_FIX: ${{ inputs.auto-fix }}
+        IN_FAIL_ON_LEAK: ${{ inputs.fail-on-leak }}
+        IN_FAIL_ON_UNCHECKABLE: ${{ inputs.fail-on-uncheckable }}
+        IN_STRICT: ${{ inputs.strict }}
+        IN_IGNORE: ${{ inputs.ignore }}
+        IN_ACCEPT_SELECTOR: ${{ inputs.accept-selector }}
+        IN_REJECT_SELECTOR: ${{ inputs.reject-selector }}
+        IN_SETTINGS_SELECTOR: ${{ inputs.settings-selector }}
+        IN_BANNER_FRAME: ${{ inputs.banner-frame }}
+        IN_MAX_SUBPAGES: ${{ inputs.max-subpages }}
+        IN_BANNER_WAIT: ${{ inputs.banner-wait }}
+        IN_REPORT_OUTPUT: ${{ inputs.report-output }}
+        IN_SOURCE_DIR: ${{ inputs.target-source-dir }}
+        IN_GIT_COMMIT: ${{ inputs.git-commit }}
+        IN_CREATE_PR: ${{ inputs.create-pr }}
+        IN_REPORT_PDF: ${{ inputs.report-pdf }}
+        IN_CLIENT: ${{ inputs.client-name }}
+        IN_JURISDICTION: ${{ inputs.jurisdiction }}
+      run: |
+        set -euo pipefail
+
+        RUNNER=(node "$CPCG_CLI")
+
+        # Optionen immer als --name=wert: ein Wert, der mit "-" beginnt, wird so nie als eigene Option gelesen.
+        ARGS=(
+          "--url=$IN_STAGING_URL"
+          "--auto-fix=$IN_AUTO_FIX"
+          "--fail-on-leak=$IN_FAIL_ON_LEAK"
+          "--report-output=$IN_REPORT_OUTPUT"
+          "--source-dir=$IN_SOURCE_DIR"
+          "--git-commit=$IN_GIT_COMMIT"
+          "--create-pr=$IN_CREATE_PR"
+          "--report-pdf=$IN_REPORT_PDF"
+          "--jurisdiction=$IN_JURISDICTION"
+        )
+        if [ -n "$IN_CLIENT" ]; then
+          ARGS+=("--client=$IN_CLIENT")
+        fi
+
+        # Neuere Optionen nur weitergeben, wenn die installierte CLI sie kennt (ältere Versionen würden sonst mit
+        # "unknown option" abbrechen). Kennt sie eine gewünschte Option nicht, wird das gemeldet, nicht still übergangen.
+        HELP="$("${RUNNER[@]}" --help 2>&1 || true)"
+        supports() { printf '%s\n' "$HELP" | grep -q -- "$1"; }
+        warn_unsupported() {
+          echo "::warning title=CPCG::Die installierte CLI kennt --$1 nicht; der Input wird ignoriert. Paket- und Action-Version angleichen."
+        }
+        # Boolesche Option: übergeben, wenn bekannt; unbekannt und angefordert ("true") → Warnung.
+        opt_bool() {
+          if supports "--$1"; then
+            ARGS+=("--$1=$2")
+          elif [ "$2" = "true" ]; then
+            warn_unsupported "$1"
+          fi
+          return 0
+        }
+        # Wert-Option (mehrzeilig erlaubt: je nichtleere Zeile eine Option): nur wenn gesetzt.
+        opt_lines() {
+          local flag="$1" value="$2" line
+          [ -n "${value//[[:space:]]/}" ] || return 0
+          if ! supports "--$flag"; then
+            warn_unsupported "$flag"
+            return 0
+          fi
+          while IFS= read -r line; do
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+            if [ -n "$line" ]; then ARGS+=("--$flag=$line"); fi
+          done <<< "$value"
+          return 0
+        }
+        opt_bool fail-on-uncheckable "$IN_FAIL_ON_UNCHECKABLE"
+        opt_bool llm-remediation "$IN_LLM_REMEDIATION"
+        opt_bool strict "$IN_STRICT"
+        opt_lines ignore "$IN_IGNORE"
+        opt_lines accept-selector "$IN_ACCEPT_SELECTOR"
+        opt_lines reject-selector "$IN_REJECT_SELECTOR"
+        opt_lines settings-selector "$IN_SETTINGS_SELECTOR"
+        opt_lines banner-frame "$IN_BANNER_FRAME"
+        opt_lines max-subpages "$IN_MAX_SUBPAGES"
+        opt_lines banner-wait "$IN_BANNER_WAIT"
+
+        "${RUNNER[@]}" "${ARGS[@]}"

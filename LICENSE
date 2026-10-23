@@ -1,0 +1,97 @@
+CuonzTech Privacy Chaos Gate (CPCG) — Lizenz / License
+
+Copyright (c) 2026 CuonzTech · Carlo Cuonz. Alle Rechte vorbehalten. / All rights reserved.
+
+Source-available, proprietär. Der Quelltext ist einsehbar, aber nicht frei im Sinne einer
+Open-Source-Lizenz. Gilt ab Version 0.2.1.
+Fassung vom 2026-10-23 (Revision 2). / Revision of 2026-10-23 (revision 2).
+
+HINWEIS ZU FRÜHEREN VERSIONEN
+Die bereits auf npm veröffentlichten Versionen 0.1.0 und 0.2.0 wurden unter der MIT-Lizenz
+veröffentlicht. Für Empfänger dieser Versionen bleiben sie unter MIT. Diese Lizenz gilt für
+Version 0.2.1 und alle späteren Versionen.
+
+
+================================================================================
+DEUTSCH
+================================================================================
+
+1. Was ohne Lizenzschlüssel erlaubt ist
+   Sie dürfen die Software herunterladen, installieren und ausführen, um Websites zu
+   scannen und das Konsolen-Gate (Ergebnis in der Konsole, Exit-Code, JSON-Report) in der
+   CI zu verwenden. Das gilt auch für kommerzielle und interne Zwecke. Ziele auf dem
+   eigenen Rechner (localhost, Loopback) sind immer frei. Frei ist ebenso der lokale
+   Auto-Fix: Patches erzeugen und im eigenen Arbeitsverzeichnis anwenden, ohne Commit und
+   ohne Pull Request.
+
+2. Was eine gültige Lizenz von CuonzTech erfordert
+   a) Erzeugen eines PDF-Reports sowie eines Kundenreports (HTML/Markdown mit --client),
+   b) Auto-Fix als Commit oder Pull Request (Code-Patches in ein Repository schreiben,
+      nicht das lokale Anwenden im Arbeitsverzeichnis).
+   Eine Lizenz erhalten Sie über cuonztech.ch (Pilot, Pro, Agency). Der Umfang der Tarife
+   steht auf der Produktseite und in der Lizenzmail. Die Zahl der Domains je Tarif beruht
+   auf Vertrauen; die Software zählt sie nicht.
+
+3. Was nicht erlaubt ist
+   - Die Software oder Teile davon zu kopieren, zu verkaufen, weiterzugeben,
+     unterzulizenzieren oder als eigenes Produkt oder als Dienstleistung anzubieten,
+     soweit dies über Ziffer 1 hinausgeht.
+   - Lizenzprüfungen, Lizenzschlüssel, Signaturprüfungen oder Hinweise auf diese Lizenz zu
+     entfernen, zu umgehen, zu deaktivieren oder zu fälschen.
+   - Lizenzschlüssel Dritten zugänglich zu machen oder zu veröffentlichen.
+   - Copyright- und Lizenzhinweise zu entfernen.
+   Die Einsicht in den Quelltext begründet kein Recht, ihn zu verändern oder
+   weiterzuverbreiten.
+
+4. Keine Gewährleistung, keine Rechtsberatung
+   Die Software wird «wie besehen» geliefert, ohne Zusicherung der Eignung für einen
+   bestimmten Zweck, der Vollständigkeit der Befunde oder der Konformität einer Website mit
+   dem revDSG, der DSGVO oder anderem Recht. Sie ist ein technisches Hilfsmittel und
+   ersetzt keine Rechtsberatung. Die Haftung ist im gesetzlich zulässigen Rahmen
+   ausgeschlossen, insbesondere für indirekte Schäden und entgangenen Gewinn.
+
+5. Drittkomponenten
+   Die Software verwendet Open-Source-Bibliotheken (zum Beispiel Playwright, Commander, Zod)
+   unter deren jeweiligen Lizenzen. Diese Lizenz ändert sie nicht.
+
+6. Beendigung
+   Verstösse gegen Ziffer 3 beenden die Berechtigung nach Ziffer 1 und 2 ohne weitere
+   Mitteilung.
+
+7. Anwendbares Recht
+   Schweizer Recht. Gerichtsstand ist der Sitz von CuonzTech, soweit zwingendes Recht nichts
+   anderes vorsieht.
+
+8. Kontakt
+   support@cuonztech.ch · https://cuonztech.ch
+
+
+================================================================================
+ENGLISH (short version; the German text above governs in case of doubt)
+================================================================================
+
+Copyright (c) 2026 CuonzTech · Carlo Cuonz. All rights reserved. Source-available,
+proprietary, from version 0.2.1.
+
+Versions 0.1.0 and 0.2.0 were published on npm under the MIT License and remain under MIT
+for their recipients. This license applies to version 0.2.1 and later.
+
+Without a license key you may install and run the software to scan websites and use the
+console gate (console output, exit code, JSON report) in CI, including for commercial and
+internal use. Local targets (localhost, loopback) are always free. Local auto-fix (creating
+and applying patches in your own working directory, without a commit or pull request) is free
+as well.
+
+A valid license from CuonzTech is required for: the PDF report and customer reports (HTML,
+Markdown with --client) and auto-fix as a commit or pull request (writing patches into a repository).
+The number of domains per plan is based on trust and is not counted by the software.
+
+You may not copy, sell, redistribute or sublicense the software, offer it as your own
+product or service, or remove, bypass, disable or forge license checks, license keys or
+license notices. Viewing the source code grants no right to modify or redistribute it.
+
+The software is provided "as is", without warranty of any kind. It is a technical aid, not
+legal advice, and does not guarantee compliance with the Swiss revFADP, the GDPR or any
+other law. Liability is excluded to the extent permitted by law.
+
+Swiss law applies. Contact: support@cuonztech.ch
