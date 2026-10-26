@@ -148,7 +148,7 @@ runs:
       id: cpcg-install
       shell: bash
       env:
-        CPCG_PINNED_VERSION: "0.2.1" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.2.2" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
