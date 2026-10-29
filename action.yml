@@ -1,5 +1,5 @@
 name: "Cuonztech Privacy Chaos Gate"
-description: "Agentic CI/CD Privacy Chaos Engineering & Auto-Remediation Gate for Cookie/Consent Leaks"
+description: "CI gate that stress-tests cookie consent banners, judges findings per jurisdiction and proposes fixes (PR for OneTrust/Cookiebot)"
 author: "Cuonztech"
 branding:
   icon: "shield"
@@ -15,6 +15,10 @@ inputs:
     default: ""
   llm-remediation:
     description: "Opt-in: allow the source code to be sent to the LLM provider (OpenAI only) to generate patches (needs api-key). Off by default; only passed on if the installed CLI supports it."
+    required: false
+    default: "false"
+  allow-custom-banner-fix:
+    description: "Opt-in: the auto-fix may change scripts even when the site uses its own banner (no supported CMP). Off by default: then only manual steps are reported. Only passed on if the installed CLI supports it."
     required: false
     default: "false"
   llm-provider:
@@ -65,6 +69,38 @@ inputs:
     description: "Maximum number of linked subpages checked for trackers (default 12, max 40; larger values take longer)"
     required: false
     default: ""
+  sitemap:
+    description: "Deep run: check subpages from robots.txt/sitemap.xml and homepage links until deep-budget is used up (true/false)"
+    required: false
+    default: "false"
+  deep-budget:
+    description: "Time budget of the sitemap deep run for subpages in seconds (30-3600, default 300)"
+    required: false
+    default: ""
+  deep-state:
+    description: "State file of the deep run; the next run continues with unchecked subpages (persist it with actions/cache)"
+    required: false
+    default: ""
+  baseline-report:
+    description: "Report JSON of an earlier run; the report lists new, resolved and unchanged findings (restore it e.g. with actions/cache or download-artifact)"
+    required: false
+    default: ""
+  har:
+    description: "Record a HAR file per browser context without bodies into evidence/har next to the report (true/false)"
+    required: false
+    default: "false"
+  verify-url:
+    description: "Closed loop: if the target URL has findings, also scan this URL (e.g. the preview deployment of the fix PR); only a clean, complete scan there counts as 'fix verified'"
+    required: false
+    default: ""
+  verify-wait:
+    description: "Seconds to wait until verify-url is reachable (0-1800, default 0)"
+    required: false
+    default: ""
+  target-headers:
+    description: "Allowlist headers for your own site only, one 'Name: value' per line (e.g. WAF bypass or 'x-vercel-protection-bypass: ...'). Pass from secrets; sent only to the target/verify origin, never to third parties, never printed. Passed via the CPCG_TARGET_HEADERS environment variable."
+    required: false
+    default: ""
   banner-wait:
     description: "Seconds to wait for a late consent banner (1-60; default as in the CLI)"
     required: false
@@ -102,9 +138,9 @@ inputs:
     required: false
     default: ""
   jurisdiction:
-    description: "Jurisdiction highlighted in the console and report: CH | EU | UK | US-CA | BR | ROW"
+    description: "Jurisdictions whose rules decide what blocks the gate, comma-separated: CH | EU | UK | US-CA | BR | ROW (strictest wins; default CH,EU as in the CLI)"
     required: false
-    default: "CH"
+    default: "CH,EU"
 
 outputs:
   leaks-found:
@@ -120,7 +156,7 @@ outputs:
     description: "Absolute or relative path to the generated JSON report"
     value: ${{ steps.cpcg-run.outputs.report_path }}
   gate_state:
-    description: "Gate result as written by the CLI (for example blocked, fix-proposed, inconclusive, passed). Empty if the installed CLI predates this output."
+    description: "Gate result as written by the CLI: clean, remediated (fix verified by re-scan), fix-proposed, blocked, inconclusive. Empty if the installed CLI predates this output."
     value: ${{ steps.cpcg-run.outputs.gate_state }}
   incomplete:
     description: "'true' if core scenarios could not be checked conclusively"
@@ -129,8 +165,11 @@ outputs:
     description: "Number of scenarios that could not be checked"
     value: ${{ steps.cpcg-run.outputs.uncheckable_count }}
   leak_requests:
-    description: "Number of tracker requests observed before consent"
+    description: "Number of blocking tracker requests/cookies (before consent, after reject/revoke and the other blocking phases)"
     value: ${{ steps.cpcg-run.outputs.leak_requests }}
+  verified:
+    description: "true if a re-scan (verify-url or target URL after a local fix) was clean and complete, false if not, empty if no re-scan ran"
+    value: ${{ steps.cpcg-run.outputs.verified }}
   exit_code:
     description: "Exit code of the CLI (0 ok, 1 leaks, 2 license invalid or revoked, 3 error, 4 incomplete)"
     value: ${{ steps.cpcg-run.outputs.exit_code }}
@@ -139,18 +178,26 @@ runs:
   using: "composite"
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
-        node-version: "20"
+        node-version: "24"
 
     # Installationsschritt: bewusst ohne Secrets (Lizenz, Token, API-Key) in der Umgebung. Nur hier läuft npm.
     - name: Install Privacy Chaos Gate
       id: cpcg-install
       shell: bash
       env:
-        CPCG_PINNED_VERSION: "0.2.2" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        ACTION_PATH: ${{ github.action_path }}
+        CPCG_PINNED_VERSION: "0.3.0" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
+
+        CLI_PATH="$ACTION_PATH/dist/cli.js"
+        if [ -f "$CLI_PATH" ]; then
+          # Eigener Build im Action-Pfad (Repo-CI): Abhängigkeiten und Browser bringt der Workflow mit.
+          echo "cli=$CLI_PATH" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
 
         # Veröffentlichtes Paket in der gepinnten Version. Lifecycle-Skripte der Abhängigkeiten laufen nicht
         # (--ignore-scripts); der Playwright-Browser wird unten ausdrücklich installiert.
@@ -175,9 +222,11 @@ runs:
         CPCG_LLM_PROVIDER: ${{ inputs.llm-provider }}
         CPCG_LLM_MODEL: ${{ inputs.llm-model }}
         CPCG_LICENSE: ${{ inputs.license }}
+        CPCG_TARGET_HEADERS: ${{ inputs.target-headers }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         IN_STAGING_URL: ${{ inputs.staging-url }}
         IN_LLM_REMEDIATION: ${{ inputs.llm-remediation }}
+        IN_ALLOW_CUSTOM_BANNER_FIX: ${{ inputs.allow-custom-banner-fix }}
         IN_AUTO_FIX: ${{ inputs.auto-fix }}
         IN_FAIL_ON_LEAK: ${{ inputs.fail-on-leak }}
         IN_FAIL_ON_UNCHECKABLE: ${{ inputs.fail-on-uncheckable }}
@@ -189,6 +238,13 @@ runs:
         IN_BANNER_FRAME: ${{ inputs.banner-frame }}
         IN_MAX_SUBPAGES: ${{ inputs.max-subpages }}
         IN_BANNER_WAIT: ${{ inputs.banner-wait }}
+        IN_SITEMAP: ${{ inputs.sitemap }}
+        IN_DEEP_BUDGET: ${{ inputs.deep-budget }}
+        IN_DEEP_STATE: ${{ inputs.deep-state }}
+        IN_BASELINE: ${{ inputs.baseline-report }}
+        IN_HAR: ${{ inputs.har }}
+        IN_VERIFY_URL: ${{ inputs.verify-url }}
+        IN_VERIFY_WAIT: ${{ inputs.verify-wait }}
         IN_REPORT_OUTPUT: ${{ inputs.report-output }}
         IN_SOURCE_DIR: ${{ inputs.target-source-dir }}
         IN_GIT_COMMIT: ${{ inputs.git-commit }}
@@ -198,6 +254,13 @@ runs:
         IN_JURISDICTION: ${{ inputs.jurisdiction }}
       run: |
         set -euo pipefail
+
+        # Freigabe-Header-Werte im Log maskieren (auch wenn sie nicht aus secrets stammen).
+        while IFS= read -r line; do
+          value="${line#*:}"
+          value="${value#"${value%%[![:space:]]*}"}"
+          if [ -n "$value" ] && [ "$value" != "$line" ]; then echo "::add-mask::$value"; fi
+        done <<< "${CPCG_TARGET_HEADERS:-}"
 
         RUNNER=(node "$CPCG_CLI")
 
@@ -250,6 +313,7 @@ runs:
         }
         opt_bool fail-on-uncheckable "$IN_FAIL_ON_UNCHECKABLE"
         opt_bool llm-remediation "$IN_LLM_REMEDIATION"
+        opt_bool allow-custom-banner-fix "$IN_ALLOW_CUSTOM_BANNER_FIX"
         opt_bool strict "$IN_STRICT"
         opt_lines ignore "$IN_IGNORE"
         opt_lines accept-selector "$IN_ACCEPT_SELECTOR"
@@ -258,5 +322,12 @@ runs:
         opt_lines banner-frame "$IN_BANNER_FRAME"
         opt_lines max-subpages "$IN_MAX_SUBPAGES"
         opt_lines banner-wait "$IN_BANNER_WAIT"
+        opt_bool sitemap "${IN_SITEMAP:-false}"
+        opt_lines deep-budget "${IN_DEEP_BUDGET:-}"
+        opt_lines deep-state "${IN_DEEP_STATE:-}"
+        opt_lines baseline "${IN_BASELINE:-}"
+        opt_bool har "${IN_HAR:-false}"
+        opt_lines verify-url "${IN_VERIFY_URL:-}"
+        opt_lines verify-wait "${IN_VERIFY_WAIT:-}"
 
         "${RUNNER[@]}" "${ARGS[@]}"
