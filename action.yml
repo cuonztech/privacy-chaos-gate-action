@@ -188,7 +188,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        CPCG_PINNED_VERSION: "0.3.2" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.3.3" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
