@@ -11,9 +11,10 @@ eingetragenen Version und führt es aus. Dieses Repository enthält nur die Acti
     staging-url: ${{ vars.STAGING_URL }}
 ```
 
-- Scan und Konsolen-Gate laufen **ohne Lizenz**.
-- Kundenreport/PDF (`report-pdf`, `client-name`), `git-commit` und `create-pr` brauchen eine gültige Lizenz
-  (`license: ${{ secrets.CPCG_LICENSE }}`). Ohne sie werden diese Schritte mit Hinweis übersprungen.
+- **Ohne gültige Lizenz** läuft der Scan vollständig, Gate-Zustand und Exit-Code sind echt. Die Ausgabe zeigt nur das
+  Ergebnis in Zahlen: keine Tracker-Namen und Belege, keine Reports, kein PDF, kein Auto-Fix, kein Commit, kein PR.
+- **Mit gültiger Lizenz** (`license: ${{ secrets.CPCG_LICENSE }}`) gibt es die vollständige Ausgabe, die Reports,
+  Kundenreport/PDF (`report-pdf`, `client-name`), Auto-Fix sowie `git-commit` und `create-pr`.
 - Alle Inputs und Outputs stehen in [`action.yml`](action.yml); die ausführliche Dokumentation liegt im
   README des npm-Pakets.
 

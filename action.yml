@@ -126,7 +126,7 @@ inputs:
     required: false
     default: ""
   license:
-    description: "CuonzTech CPCG license (CPCG-… or customer key CPCG-K-…) — from secrets, after online purchase. Not needed for scan and console gate; required for customer report/PDF, git-commit and create-pr. Passed via the CPCG_LICENSE environment variable."
+    description: "CuonzTech CPCG license (CPCG-… or customer key CPCG-K-…) — from secrets, after online purchase. Without a valid license the scan and gate still run with a real exit code, but the output is limited to numbers (no tracker names, reports, PDF, auto-fix, commit or PR). Passed via the CPCG_LICENSE environment variable."
     required: false
     default: ""
   report-pdf:
@@ -171,7 +171,7 @@ outputs:
     description: "true if a re-scan (verify-url or target URL after a local fix) was clean and complete, false if not, empty if no re-scan ran"
     value: ${{ steps.cpcg-run.outputs.verified }}
   exit_code:
-    description: "Exit code of the CLI (0 ok, 1 leaks, 2 license invalid or revoked, 3 error, 4 incomplete)"
+    description: "Exit code of the CLI (0 ok, 1 leaks, 3 error, 4 incomplete; 2 is not used, an invalid license limits the output instead)"
     value: ${{ steps.cpcg-run.outputs.exit_code }}
 
 runs:
@@ -188,7 +188,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        CPCG_PINNED_VERSION: "0.3.3" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.3.4" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
