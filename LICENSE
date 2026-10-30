@@ -4,12 +4,14 @@ Copyright (c) 2026 CuonzTech · Carlo Cuonz. Alle Rechte vorbehalten. / All righ
 
 Source-available, proprietär. Der Quelltext ist einsehbar, aber nicht frei im Sinne einer
 Open-Source-Lizenz. Gilt ab Version 0.2.1.
-Fassung vom 2026-10-23 (Revision 2). / Revision of 2026-10-23 (revision 2).
+Fassung vom 2026-10-30 (Revision 3). / Revision of 2026-10-30 (revision 3).
 
 HINWEIS ZU FRÜHEREN VERSIONEN
 Die bereits auf npm veröffentlichten Versionen 0.1.0 und 0.2.0 wurden unter der MIT-Lizenz
-veröffentlicht. Für Empfänger dieser Versionen bleiben sie unter MIT. Diese Lizenz gilt für
-Version 0.2.1 und alle späteren Versionen.
+veröffentlicht. Für Empfänger dieser Versionen bleiben sie unter MIT. Die Versionen 0.2.1 bis
+0.3.3 wurden unter Revision 2 dieser Lizenz (Fassung vom 2026-10-23) veröffentlicht; für
+Empfänger dieser Versionen bleibt Revision 2 massgebend. Diese Revision 3 gilt für Version
+0.3.4 und alle späteren Versionen.
 
 
 ================================================================================
@@ -17,17 +19,24 @@ DEUTSCH
 ================================================================================
 
 1. Was ohne Lizenzschlüssel erlaubt ist
-   Sie dürfen die Software herunterladen, installieren und ausführen, um Websites zu
-   scannen und das Konsolen-Gate (Ergebnis in der Konsole, Exit-Code, JSON-Report) in der
-   CI zu verwenden. Das gilt auch für kommerzielle und interne Zwecke. Ziele auf dem
-   eigenen Rechner (localhost, Loopback) sind immer frei. Frei ist ebenso der lokale
-   Auto-Fix: Patches erzeugen und im eigenen Arbeitsverzeichnis anwenden, ohne Commit und
-   ohne Pull Request.
+   Sie dürfen die Software herunterladen, installieren und ausführen, auch für kommerzielle
+   und interne Zwecke. Der Umfang hängt vom Ziel des Scans ab:
+   a) Lokale Ziele (localhost, 127.0.0.1, ::1) sind für Entwicklungs-, Test- und
+      Fixture-Zwecke vollständig frei: voller Scan, detailliertes Konsolen-Gate,
+      vollständiger JSON-Report und lokaler Auto-Fix im eigenen Arbeitsverzeichnis.
+   b) Externe Ziele (Staging, Produktion, alle anderen Adressen): Ermittlung des
+      Gate-Zustands (PASS, BLOCKED, INCONCLUSIVE), des Exit-Codes und aggregierter Zahlen
+      (Anzahl der Befundgruppen und der betroffenen Requests). Die Ausgabe ist auf diese
+      Zahlen gekürzt; die erzeugte report.json ist eine schlanke Ergebnisdatei mit dem
+      Vermerk limitedByLicense: true.
 
-2. Was eine gültige Lizenz von CuonzTech erfordert
-   a) Erzeugen eines PDF-Reports sowie eines Kundenreports (HTML/Markdown mit --client),
-   b) Auto-Fix als Commit oder Pull Request (Code-Patches in ein Repository schreiben,
-      nicht das lokale Anwenden im Arbeitsverzeichnis).
+2. Was bei externen Zielen eine gültige Lizenz von CuonzTech erfordert
+   a) Detaillierte Befundberichte (konkrete Tracker-Namen, URLs, Belege, Phasen,
+      Zeitlinien),
+   b) vollständige Prüfberichte in Markdown, HTML und PDF sowie HAR-Exporte,
+   c) Kundenreports (--client),
+   d) Auto-Fix: Erzeugen und Anwenden von Patches im Arbeitsverzeichnis sowie Commits und
+      Pull Requests.
    Eine Lizenz erhalten Sie über cuonztech.ch (Pilot, Pro, Agency). Der Umfang der Tarife
    steht auf der Produktseite und in der Lizenzmail. Die Zahl der Domains je Tarif beruht
    auf Vertrauen; die Software zählt sie nicht.
@@ -74,16 +83,24 @@ Copyright (c) 2026 CuonzTech · Carlo Cuonz. All rights reserved. Source-availab
 proprietary, from version 0.2.1.
 
 Versions 0.1.0 and 0.2.0 were published on npm under the MIT License and remain under MIT
-for their recipients. This license applies to version 0.2.1 and later.
+for their recipients. Versions 0.2.1 to 0.3.3 were published under revision 2 of this license
+(dated 2026-10-23); revision 2 remains authoritative for their recipients. This revision 3
+applies to version 0.3.4 and later.
 
-Without a license key you may install and run the software to scan websites and use the
-console gate (console output, exit code, JSON report) in CI, including for commercial and
-internal use. Local targets (localhost, loopback) are always free. Local auto-fix (creating
-and applying patches in your own working directory, without a commit or pull request) is free
-as well.
+Without a license key you may install and run the software, including for commercial and
+internal use. The scope depends on the target of the scan:
+(a) Local targets (localhost, 127.0.0.1, ::1) are fully free for development, testing and
+fixture purposes: full scan, detailed console gate, full JSON report and local auto-fix in
+your own working directory.
+(b) External targets (staging, production, any other address): determining the gate state
+(PASS, BLOCKED, INCONCLUSIVE), the exit code and aggregate numbers (number of finding groups
+and affected requests). The output is limited to these numbers; the generated report.json is
+a slim result file marked limitedByLicense: true.
 
-A valid license from CuonzTech is required for: the PDF report and customer reports (HTML,
-Markdown with --client) and auto-fix as a commit or pull request (writing patches into a repository).
+For external targets a valid license from CuonzTech is required for: detailed finding
+reports (tracker names, URLs, evidence, phases, timelines), full reports in Markdown, HTML
+and PDF as well as HAR exports, customer reports (--client), and auto-fix (creating and
+applying patches in the working directory, commits and pull requests).
 The number of domains per plan is based on trust and is not counted by the software.
 
 You may not copy, sell, redistribute or sublicense the software, offer it as your own

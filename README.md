@@ -26,4 +26,4 @@ eingetragenen Version und führt es aus. Dieses Repository enthält nur die Acti
 
 Lizenz und Kauf: <https://cuonztech.ch/privacy-chaos-gate-landing-v01.html> · Support: support@cuonztech.ch
 
-Die Software steht unter der proprietären Lizenz in [`LICENSE`](LICENSE) (Fassung 2026-10-23).
+Die Software steht unter der proprietären Lizenz in [`LICENSE`](LICENSE) (Revision 3 vom 2026-10-30).
