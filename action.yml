@@ -65,6 +65,14 @@ inputs:
     description: "Part of the URL of the iframe that contains the consent banner (CMP inside a frame)"
     required: false
     default: ""
+  visitor:
+    description: "Visitor profile: ch (de-CH, Europe/Zurich, default) or eu (de-DE, Europe/Berlin). Fixes browser language and time zone; the country of the IP is only changed by proxy"
+    required: false
+    default: ""
+  proxy:
+    description: "Proxy for all browser requests, e.g. an exit in the EU (http(s)://[user:pass@]host:port or socks5://host:port) — from secrets if it contains credentials. Passed via the CPCG_PROXY environment variable, never on the command line. The measured IP country is in the report"
+    required: false
+    default: ""
   max-subpages:
     description: "Maximum number of linked subpages checked for trackers (default 12, max 40; larger values take longer)"
     required: false
@@ -188,7 +196,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        CPCG_PINNED_VERSION: "0.3.6" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.3.7" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
@@ -223,6 +231,7 @@ runs:
         CPCG_LLM_MODEL: ${{ inputs.llm-model }}
         CPCG_LICENSE: ${{ inputs.license }}
         CPCG_TARGET_HEADERS: ${{ inputs.target-headers }}
+        CPCG_PROXY: ${{ inputs.proxy }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         IN_STAGING_URL: ${{ inputs.staging-url }}
         IN_LLM_REMEDIATION: ${{ inputs.llm-remediation }}
@@ -237,6 +246,7 @@ runs:
         IN_SETTINGS_SELECTOR: ${{ inputs.settings-selector }}
         IN_BANNER_FRAME: ${{ inputs.banner-frame }}
         IN_MAX_SUBPAGES: ${{ inputs.max-subpages }}
+        IN_VISITOR: ${{ inputs.visitor }}
         IN_BANNER_WAIT: ${{ inputs.banner-wait }}
         IN_SITEMAP: ${{ inputs.sitemap }}
         IN_DEEP_BUDGET: ${{ inputs.deep-budget }}
@@ -321,6 +331,7 @@ runs:
         opt_lines settings-selector "$IN_SETTINGS_SELECTOR"
         opt_lines banner-frame "$IN_BANNER_FRAME"
         opt_lines max-subpages "$IN_MAX_SUBPAGES"
+        opt_lines visitor "${IN_VISITOR:-}"
         opt_lines banner-wait "$IN_BANNER_WAIT"
         opt_bool sitemap "${IN_SITEMAP:-false}"
         opt_lines deep-budget "${IN_DEEP_BUDGET:-}"
