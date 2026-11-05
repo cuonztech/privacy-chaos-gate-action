@@ -138,7 +138,7 @@ inputs:
     required: false
     default: ""
   report-pdf:
-    description: "Create the deluxe PDF (cover page + evidence) after the scan. Requires a valid license; skipped without one."
+    description: "Create the customer report PDF (summary, tailored fix guide, technical evidence) after the scan. Requires a valid license; skipped without one."
     required: false
     default: "false"
   client-name:
@@ -196,7 +196,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        CPCG_PINNED_VERSION: "0.3.9" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.3.10" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
