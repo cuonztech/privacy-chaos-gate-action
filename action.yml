@@ -66,11 +66,11 @@ inputs:
     required: false
     default: ""
   visitor:
-    description: "Visitor profile: ch (de-CH, Europe/Zurich, default) or eu (de-DE, Europe/Berlin). Fixes browser language and time zone; the country of the IP is only changed by proxy"
+    description: "Visits: both (default) = one visit from Switzerland (direct) and one from the EU (via the EU exit), each jurisdiction is judged by its own visit; ch or eu = only that visit, explicitly incomplete"
     required: false
     default: ""
   proxy:
-    description: "Proxy for all browser requests, e.g. an exit in the EU (http(s)://[user:pass@]host:port or socks5://host:port) — from secrets if it contains credentials. Passed via the CPCG_PROXY environment variable, never on the command line. The measured IP country is in the report"
+    description: "Your own EU exit for the EU visit only (the visit from Switzerland is always direct): http(s)://[user:pass@]host:port or socks5://host:port — from secrets if it contains credentials. Passed via the CPCG_PROXY environment variable, never on the command line. The measured IP country is in the report"
     required: false
     default: ""
   max-subpages:
@@ -196,7 +196,7 @@ runs:
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
-        CPCG_PINNED_VERSION: "0.3.12" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
+        CPCG_PINNED_VERSION: "0.4.0" # = package.json version; bei jedem Release mit anheben (tests/action-pin.test.ts prüft das)
       run: |
         set -euo pipefail
 
